@@ -1,8 +1,9 @@
+import 'dotenv/config'
 import {Container} from "inversify";
-import {ILogger} from "./services/Logger/interface/ILogger";
-import {Logger} from "./services/Logger/classes/Logger";
-import {DependencyIdentifier} from "./DependencyIdentifiers";
-import {AuctionMonitorApp} from "./AuctionMonitorApp";
+import {AuctionMonitorApp} from "./classes/AuctionMonitorApp";
+import {configureDependencies} from "./inversify.config";
+import {ILogger} from "./interfaces/ILogger";
+
 
 /*
  * Create the DI container.
@@ -14,17 +15,22 @@ const container = new Container({
 /*
  * Register dependencies in DI environment.
  */
-container.bind<ILogger>(DependencyIdentifier.LOGGER).to(Logger);
+configureDependencies(container);
 
 
 /*
  * Inject all dependencies in the application & retrieve application instance.
  */
-const app = container.resolve(AuctionMonitorApp);
+export const app = container.resolve<AuctionMonitorApp>(AuctionMonitorApp);
 
 /*
  * Start the application
  */
 (async () => {
-    await app.start();
+    try {
+        await app.start();
+    } catch (error) {
+        container.get<ILogger>('logger').error('An error occurred during application startup:', error)
+        process.exit(1);
+    }
 })();
